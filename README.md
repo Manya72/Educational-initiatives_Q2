@@ -20,6 +20,7 @@ The Smart Home System is a Java-based application designed to facilitate the man
 - SmartHomeSystem: The main system that manages devices, scheduling, and triggers.
 - Trigger: Represents conditions that automate device control.
 - DeviceProxy: Enforces access control based on user roles.
+- SmartDeviceObserver :Interface for monitoring device status updates.
 
 ## Folder Structure
 
@@ -32,6 +33,7 @@ The Smart Home System is a Java-based application designed to facilitate the man
   - SmartDeviceProxy.java - Proxy class for device access
   - SmartHomeSystem.java - Main class managing the smart home system
   - Trigger.java - Class for defining automation triggers
+  - SmartDeviceObserver -Observer interface 
   - Thermostat.java - Class representing thermostat devices
   - LightDevice.java - Class representing light devices
   - DoorLock.java - Class representing door locking mechanisms
