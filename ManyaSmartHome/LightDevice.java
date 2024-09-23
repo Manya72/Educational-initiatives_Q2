@@ -42,6 +42,7 @@ public class LightDevice implements SmartDevice {
             // Implementation for observer update (if necessary)
             System.out.println("Light " + id + " received update: " + status);
         }
+        
 
        
     }

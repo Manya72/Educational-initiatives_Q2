@@ -20,7 +20,7 @@ public class Thermostat implements SmartDevice {
 
     @Override
     public String getStatus() {
-        return "Thermostat " + id + " is set to " + temperature + " degrees.";
+        return "Thermostat " + id + " is set to " + temperature + " degrees";
     }
 
     @Override

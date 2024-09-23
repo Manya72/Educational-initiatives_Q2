@@ -2,47 +2,45 @@ package ManyaSmartHome;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import ManyaSmartHome.Exceptions.DeviceNotFoundException;
+import ManyaSmartHome.Exceptions.InvalidTimeFormatException;
 
 public class SmartHomeSystem {
-    final Map<Integer, SmartDevice> devices = new HashMap<>();
-    private final SmartDeviceFactory deviceFactory;
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-      private final List<Trigger> triggers = new ArrayList<>();  // List to sto
+    private static final Logger logger = Logger.getLogger(SmartHomeSystem.class.getName());
 
-    public SmartHomeSystem() {
-        // Get the singleton instance of DeviceFactory
-        this.deviceFactory = SmartDeviceFactory.getInstance();
-    }
+    private final Map<Integer, SmartDevice> devices = new HashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final List<Trigger> triggers = new ArrayList<>();  // List to store triggers
 
     // Method to add devices using the factory
     public void addDevice(SmartDevice device) {
+        if (device == null) {
+            throw new IllegalArgumentException("Device cannot be null");
+        }
         devices.put(device.getId(), device);
-        System.out.println(device.getDeviceType() + " " + device.getId() + " added to the system.");
+        logger.log(Level.INFO, "[{0} {1} added to the system.]", new Object[]{device.getDeviceType(), device.getId()});
     }
+
     public void removeDevice(int deviceId) {
         if (devices.containsKey(deviceId)) {
             devices.remove(deviceId);
-            System.out.println("Device with ID " + deviceId + " has been removed from the system.");
+            logger.log(Level.INFO, "Device with ID {0} has been removed from the system.", deviceId);
         } else {
-            System.out.println("Device with ID " + deviceId + " not found.");
+            logger.log(Level.WARNING, "Attempt to remove non-existing device with ID {0}.", deviceId);
         }
     }
-    
-    // Methods to control the devices
+
     public void turnOnDevice(int deviceId) {
         SmartDevice device = devices.get(deviceId);
         if (device != null) {
             device.turnOn();
         } else {
-            System.out.println("Device with ID " + deviceId + " not found.");
+            logger.log(Level.WARNING, "Device with ID {0} not found.", deviceId);
         }
     }
 
@@ -51,109 +49,107 @@ public class SmartHomeSystem {
         if (device != null) {
             device.turnOff();
         } else {
-            System.out.println("Device with ID " + deviceId + " not found.");
+            logger.log(Level.WARNING, "Device with ID {0} not found.", deviceId);
         }
     }
 
     public void reportStatus() {
+        StringBuilder statusReport = new StringBuilder("Status Report: ");
+        
         for (SmartDevice device : devices.values()) {
-            System.out.println(device.getStatus());
+            statusReport.append(device.getStatus()).append(". ");
         }
+        
+        // Remove the extra space at the end
+        String finalStatusReport = statusReport.toString().trim();
+    
+        logger.log(Level.INFO, finalStatusReport);
+    }
+    
+
+    public void setSchedule(int deviceId, String time, String action) 
+        throws DeviceNotFoundException, InvalidTimeFormatException  {
+    
+    SmartDevice device = devices.get(deviceId);
+    if (device == null) {
+        throw new DeviceNotFoundException("Device with ID " + deviceId + " not found.");
     }
 
-    // Method to notify all devices with a status update
-    public void notifyAllDevices(String status) {
-        for (SmartDevice device : devices.values()) {
-            device.update(status);  // Send the status update to each device
-        }
-    }
+    try {
+        SimpleDateFormat format = new SimpleDateFormat("HH:mm");
+        Date scheduledTime = format.parse(time);
+        Date currentTime = new Date();
+        SimpleDateFormat currentFormat = new SimpleDateFormat("HH:mm");
+        String currentTimeString = currentFormat.format(currentTime);
+        Date currentFormattedTime = format.parse(currentTimeString);
 
-    // Method to schedule turning on/off a device at a specific time
-    public void setSchedule(int deviceId, String time, String action) throws Exception {
-        SmartDevice device = devices.get(deviceId);
-        if (device != null) {
-            try {
-                // Parse the scheduled time
-                SimpleDateFormat format = new SimpleDateFormat("HH:mm");
-                Date scheduledTime = format.parse(time);
-    
-                // Get current time in HH:mm format
-                Date currentTime = new Date();
-                SimpleDateFormat currentFormat = new SimpleDateFormat("HH:mm");
-                String currentTimeString = currentFormat.format(currentTime);
-                Date currentFormattedTime = format.parse(currentTimeString);
-                System.out.println(currentFormattedTime);
-                System.out.println(scheduledTime);
-                // Compare scheduled time with the current time
-                if (scheduledTime.after(currentFormattedTime)) {
-                    long delay = scheduledTime.getTime() - currentFormattedTime.getTime();
-    
-                    // Schedule the task based on the time difference
-                    System.out.println(currentFormattedTime);
-                    System.out.println(scheduledTime);
-                    scheduler.schedule(() -> {
-                        try {
-                            if (action.equalsIgnoreCase("on")) {
-                                device.turnOn();
-                            } else if (action.equalsIgnoreCase("off")) {
-                                device.turnOff();
-                            } else {
-                                throw new Exception("Invalid action: " + action);
-                            }
-                            System.out.println("Scheduled action executed: " + action + " for device " + device.getId() + " at " + time);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }, delay, TimeUnit.MILLISECONDS);
-    
-                    System.out.println("Scheduled Task - [device: " + device.getDeviceType() + ", time: " + time + ", action: " + action + "]");
-                } else {
-                    throw new Exception("Scheduled time is in the past.");
+        if (scheduledTime.after(currentFormattedTime)) {
+            long delay = scheduledTime.getTime() - currentFormattedTime.getTime();
+            scheduler.schedule(() -> {
+                try {
+                    if (action.equalsIgnoreCase("on")) {
+                        device.turnOn();
+                    } else if (action.equalsIgnoreCase("off")) {
+                        device.turnOff();
+                    } else {
+                        // throw new InvalidActionException("Invalid action: " + action);
+                    }
+                    logger.log(Level.INFO, "[Scheduled action executed: {0} for device {1} at {2}]", 
+                            new Object[]{action, device.getId(), time});
+                } catch (Exception e) {
+                    logger.log(Level.SEVERE, "Error executing scheduled action: {0}", e.getMessage());
                 }
-            } catch (ParseException e) {
-                throw new Exception("Invalid time format. Please use HH:mm format.");
-            }
+            }, delay, TimeUnit.MILLISECONDS);
+            logger.log(Level.INFO, "Scheduled Task - [device: {0}, time: {1}, action: {2}]", 
+                    new Object[]{device.getDeviceType(), time, action});
         } else {
-            throw new Exception("Device with ID " + deviceId + " not found.");
+            throw new InvalidTimeFormatException("Scheduled time is in the past.");
         }
+    } catch (ParseException e) {
+        logger.log(Level.SEVERE, "Invalid time format.", e);
+        // throw new InvalidTimeFormatException("Invalid time format. Please use HH:mm format.");
     }
-   
-
-    // Method to add triggers
+}
     public void addTrigger(String type, String operator, double threshold, String action) {
         triggers.add(new Trigger(type, operator, threshold, action));
+        
+        // Build the trigger condition string
+        String condition = type + " " + operator + " " + threshold;
+        
+        // Format the trigger message
+        String triggerMessage = String.format("[{condition: \"%s\", action: \"%s\"}]", condition, action);
+        
+        // Print the trigger message
+        System.out.println("Automated Triggers: " + triggerMessage);
     }
+    
 
-    // Method to check triggers and execute actions
     public void checkTriggers() {
         for (SmartDevice device : devices.values()) {
             if (device instanceof Thermostat) {
                 double currentTemperature = ((Thermostat) device).getTemperature();
-    
+
                 for (Trigger trigger : triggers) {
                     if (trigger.getType().equals("temperature") && trigger.evaluate(currentTemperature)) {
-                        // Execute the action defined in the trigger
+                        logger.log(Level.INFO, "[Trigger matched. Executing action: {0}]", trigger.getAction());
                         executeAction(trigger.getAction());
                     }
                 }
             }
         }
     }
-    
 
-    // Method to execute action from the trigger
     private void executeAction(String action) {
         String[] parts = action.split("\\(");
         String deviceAction = parts[0].trim();
         int deviceId = Integer.parseInt(parts[1].replace(")", "").trim());
-        
-        if (deviceAction.equals("turnOff")) {
+
+        if ("turnOff".equals(deviceAction)) {
             turnOffDevice(deviceId);
-        } else if (deviceAction.equals("turnOn")) {
+        } else if ("turnOn".equals(deviceAction)) {
             turnOnDevice(deviceId);
+        } else {
+            logger.log(Level.WARNING, "Unknown action: {0}", deviceAction);
         }
-       
     }
-    
-    
 }

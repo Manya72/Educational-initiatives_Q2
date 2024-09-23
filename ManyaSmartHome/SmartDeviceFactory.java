@@ -1,31 +1,40 @@
 package ManyaSmartHome;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class SmartDeviceFactory {
 
-    // Singleton instance
+    private static final Logger logger = Logger.getLogger(SmartDeviceFactory.class.getName());
     private static SmartDeviceFactory instance;
 
-    // Private constructor to prevent instantiation from other classes
     private SmartDeviceFactory() {}
 
-    // Method to get the singleton instance of the DeviceFactory
     public static SmartDeviceFactory getInstance() {
         if (instance == null) {
             instance = new SmartDeviceFactory();
+            // logger.log(Level.INFO, "SmartDeviceFactory instance created.");
         }
         return instance;
     }
 
-    // Factory method to create devices
     public SmartDevice getInstance(String deviceType, int id) {
+        SmartDevice device;
         switch (deviceType.toLowerCase()) {
             case "light":
-                return new LightDevice(id);
+                device = new LightDevice(id);
+                break;
             case "thermostat":
-                return new Thermostat(id, 70); // Default temperature
+                device = new Thermostat(id, 70); // Default temperature
+                break;
             case "doorlock":
-                return new DoorLock(id);
+                device = new DoorLock(id);
+                break;
             default:
+                logger.log(Level.SEVERE, "Unknown device type: {0}", deviceType);
                 throw new IllegalArgumentException("Unknown device type: " + deviceType);
         }
+        // logger.log(Level.INFO, "Created device: {0} with ID {1}", new Object[]{deviceType, id});
+        return device;
     }
 }
