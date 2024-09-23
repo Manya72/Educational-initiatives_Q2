@@ -16,7 +16,7 @@ The Smart Home System is a Java-based application designed to facilitate the man
 - Concrete Devices:
   - LightDevice: Represents a smart light.
   - Thermostat: Manages temperature settings.
-  -DoorLock: Controls the locking mechanism.
+  - DoorLock: Controls the locking mechanism.
 - SmartHomeSystem: The main system that manages devices, scheduling, and triggers.
 - Trigger: Represents conditions that automate device control.
 - DeviceProxy: Enforces access control based on user roles.
