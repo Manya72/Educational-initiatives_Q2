@@ -1,3 +1,4 @@
+[Please Find my Exercise 1 Solution here ](https://github.com/Manya72/Educational_Initiatives_Q1)
 ## Smart Home System
 
 ## Overview
